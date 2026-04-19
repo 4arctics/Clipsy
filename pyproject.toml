@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clipsy"
+version = "0.1.0"
+description = "A small Arch/Hyprland clipping and recording daemon backed by GPU Screen Recorder."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "arctic" }]
+dependencies = []
+
+[project.scripts]
+clipsy = "clipsy.cli:main"
+
+[tool.setuptools]
+packages = ["clipsy"]

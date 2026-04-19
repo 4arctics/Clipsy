@@ -1,0 +1,13 @@
+[Unit]
+Description=Clipsy replay buffer and recording daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/clipping
+ExecStart=/usr/bin/python -m clipsy daemon
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

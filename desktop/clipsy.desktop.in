@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Clipsy
+GenericName=Screen Clipper
+Comment=Open Clipsy settings for clips and recordings
+Exec=@APP_DIR@/scripts/clipsy-gui-launch
+Icon=@APP_DIR@/assets/clipsy.svg
+Terminal=false
+Categories=AudioVideo;Recorder;
+Keywords=clip;clips;record;recording;screen;replay;hyprland;rofi;
+StartupNotify=false

@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+APP_DIR="${CLIPSY_APP_DIR:-/home/arctic/clipping}"
+
+open_gui() {
+    if command -v clipsy >/dev/null 2>&1; then
+        clipsy gui
+        return $?
+    fi
+
+    cd "$APP_DIR"
+    /usr/bin/python -m clipsy gui
+}
+
+if ! open_gui; then
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -t 3500 -u normal "Clipsy" "Could not open the settings UI. Try running: cd $APP_DIR && python -m clipsy gui"
+    fi
+    exit 1
+fi
