@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-APP_DIR="${CLIPSY_APP_DIR:-/home/arctic/clipping}"
+APP_DIR="${CLIPSY_APP_DIR:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}"
 
 open_gui() {
     if command -v clipsy >/dev/null 2>&1; then
