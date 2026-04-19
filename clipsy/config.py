@@ -30,7 +30,7 @@ class ClipConfig:
     resolution: str = "0x0"
     fps: int = 60
     save_path: str = "~/Videos/Clips"
-    container: str = "mkv"
+    container: str = "mp4"
     codec: str = "h264"
     quality: str = "very_high"
     bitrate_mode: str = "cbr"
