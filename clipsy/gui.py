@@ -331,7 +331,10 @@ def _daemon_command(action: str, config_path: Path) -> dict[str, Any]:
         socket_path = effective_socket_path(load_config(config_path))
         return send_command(action_map[action], socket_path=socket_path)
     except IpcError as exc:
-        return {"ok": False, "error": str(exc)}
+        msg = str(exc)
+        if "No such file or directory" in msg or "Connection refused" in msg:
+            return {"ok": False, "error": "Daemon is not running. Start it with: clipsy daemon"}
+        return {"ok": False, "error": msg}
 
 
 def _list_devices() -> dict[str, list[dict[str, str]]]:
