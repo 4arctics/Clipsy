@@ -48,7 +48,15 @@ yay -S gpu-screen-recorder
 pip install --user -e .
 ```
 
-Make sure `~/.local/bin` is in your `$PATH`. Or run without installing:
+Then make sure `~/.local/bin` is in your `$PATH` — add this to your `~/.bashrc` or `~/.zshrc` if `clipsy` says "not found":
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then reload your shell: `source ~/.bashrc` (or open a new terminal).
+
+Or skip the install entirely and run directly:
 
 ```sh
 python -m clipsy <command>

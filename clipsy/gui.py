@@ -1842,7 +1842,10 @@ APP_HTML = r"""<!doctype html>
         return;
       }
       if (!value) {
-        toast("Press one modifier plus one key, like SUPER + F9.", "bad");
+        const modifierKeys = new Set(["Meta", "Control", "Alt", "Shift", "Super", "OS"]);
+        if (!modifierKeys.has(event.key)) {
+          toast("Press one modifier plus one key, like SUPER + F9 or ALT + S.", "bad");
+        }
         return;
       }
       finishHotkeyCapture(value);
