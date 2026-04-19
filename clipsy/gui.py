@@ -168,6 +168,12 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
             _shutdown_server(server)
             super().closeEvent(event)
 
+        def keyPressEvent(self, event) -> None:  # type: ignore[no-untyped-def]
+            # Pass all key events to the web content instead of letting Qt
+            # intercept them (Alt would otherwise activate the menu bar).
+            view.setFocus()
+            super().keyPressEvent(event)
+
     app = QApplication.instance() or QApplication([])
     app.setApplicationName("Clipsy")
     app.setDesktopFileName("clipsy")
@@ -182,6 +188,7 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
     window.setWindowIcon(QIcon(str(_asset_path("clipsy.svg"))))
     window.resize(1280, 820)
     window.setMinimumSize(980, 660)
+    window.menuBar().hide()  # prevent Qt from intercepting Alt for menu shortcuts
     window.setCentralWidget(view)
     view.page().windowCloseRequested.connect(window.close)
     window.show()
@@ -1564,6 +1571,15 @@ APP_HTML = r"""<!doctype html>
 
   <script>
     const state = { config: null, activeTab: "clips", capturingHotkey: null };
+
+    // Track modifier keys ourselves — Qt WebEngine doesn't reliably set event.altKey
+    const heldMods = new Set();
+    window.addEventListener("keydown", (e) => {
+      if (["Alt", "Control", "Meta", "Shift"].includes(e.key)) heldMods.add(e.key);
+    }, true);
+    window.addEventListener("keyup", (e) => heldMods.delete(e.key), true);
+    window.addEventListener("blur", () => heldMods.clear());
+
     const subtitles = {
       clips: ["Clip settings", "Choose how long clips are, where they save, and how sharp they look."],
       record: ["Recording settings", "Choose quality and save location for full recordings."],
@@ -1817,10 +1833,10 @@ APP_HTML = r"""<!doctype html>
     function hotkeyFromEvent(event) {
       if (event.key === "Escape") return null;
       const mods = [];
-      if (event.metaKey) mods.push("SUPER");
-      if (event.ctrlKey) mods.push("CTRL");
-      if (event.altKey) mods.push("ALT");
-      if (event.shiftKey) mods.push("SHIFT");
+      if (event.metaKey  || heldMods.has("Meta"))    mods.push("SUPER");
+      if (event.ctrlKey  || heldMods.has("Control")) mods.push("CTRL");
+      if (event.altKey   || heldMods.has("Alt"))     mods.push("ALT");
+      if (event.shiftKey || heldMods.has("Shift"))   mods.push("SHIFT");
       const key = keyName(event);
       if (!key || mods.length === 0) return "";
       return `${mods.join(" ")},${key}`;
