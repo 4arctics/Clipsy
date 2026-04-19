@@ -46,6 +46,12 @@ class _Handler(BaseHTTPRequestHandler):
         return
 
     def do_GET(self) -> None:
+        try:
+            self._do_GET()
+        except Exception as exc:
+            self._send_json({"ok": False, "error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def _do_GET(self) -> None:
         if self.path in {"/", "/index.html"}:
             self._send_html(APP_HTML)
             return
@@ -68,11 +74,17 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_json({"ok": False, "error": "not found"}, HTTPStatus.NOT_FOUND)
 
     def do_POST(self) -> None:
+        try:
+            self._do_POST()
+        except Exception as exc:
+            self._send_json({"ok": False, "error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    def _do_POST(self) -> None:
         if self.path == "/api/config":
             body = self._read_json()
             config = _config_from_dict(body.get("config", {}), load_config(self.server.config_path))
-            save_config(config, self.server.config_path)
-            self._send_json({"ok": True, "config": _config_to_dict(config), "message": "Settings saved"})
+            saved_path = save_config(config, self.server.config_path)
+            self._send_json({"ok": True, "config": _config_to_dict(config), "message": f"Settings saved to {saved_path}"})
             return
         if self.path == "/api/action":
             body = self._read_json()
