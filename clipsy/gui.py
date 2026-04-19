@@ -155,7 +155,7 @@ def _free_port() -> int:
 def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
     try:
         from PySide6.QtCore import QEvent, QObject, QUrl, Qt
-        from PySide6.QtGui import QIcon
+        from PySide6.QtGui import QIcon, QKeyEvent
         from PySide6.QtWebEngineWidgets import QWebEngineView
         from PySide6.QtWidgets import QApplication, QMainWindow
     except ImportError as exc:
@@ -163,15 +163,17 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
             "The native Clipsy window needs PySide6 with Qt WebEngine installed."
         ) from exc
 
-    _MOD_NAMES: dict[int, str] = {
-        int(Qt.Key.Key_Alt): "ALT",
-        int(Qt.Key.Key_AltGr): "ALT",
-        int(Qt.Key.Key_Control): "CTRL",
-        int(Qt.Key.Key_Meta): "SUPER",
-        int(Qt.Key.Key_Super_L): "SUPER",
-        int(Qt.Key.Key_Super_R): "SUPER",
-        int(Qt.Key.Key_Shift): "SHIFT",
-    }
+    _MOD_NAMES: dict[int, str] = {}
+    for _attr, _mod_name in [
+        ("Key_Alt", "ALT"), ("Key_AltGr", "ALT"),
+        ("Key_Control", "CTRL"), ("Key_Meta", "SUPER"),
+        ("Key_Super_L", "SUPER"), ("Key_Super_R", "SUPER"),
+        ("Key_Shift", "SHIFT"),
+    ]:
+        _kv = getattr(Qt.Key, _attr, None)
+        if _kv is not None:
+            _MOD_NAMES[int(_kv)] = _mod_name
+
     _MOD_ORDER = ["SUPER", "CTRL", "ALT", "SHIFT"]
     _SPECIAL: dict[int, str] = {
         int(Qt.Key.Key_Space): "SPACE",
@@ -190,6 +192,8 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
         int(Qt.Key.Key_PageDown): "PAGEDOWN",
         int(Qt.Key.Key_Insert): "INSERT",
     }
+    _KEY_F1 = int(Qt.Key.Key_F1)
+    _KEY_F_MAX = int(getattr(Qt.Key, "Key_F35", Qt.Key.Key_F12))
 
     class _HotkeyFilter(QObject):
         def __init__(self) -> None:
@@ -197,37 +201,42 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
             self._held: set[str] = set()
 
         def eventFilter(self, obj: object, event: object) -> bool:  # type: ignore[override]
-            t = event.type()  # type: ignore[attr-defined]
-            if t == QEvent.Type.KeyPress:
-                k = event.key()  # type: ignore[attr-defined]
-                mod = _MOD_NAMES.get(k)
-                if mod:
-                    self._held.add(mod)
+            try:
+                t = event.type()  # type: ignore[attr-defined]
+                if t == QEvent.Type.FocusOut:
+                    self._held.clear()
                     return False
-                if k == int(Qt.Key.Key_Escape):
-                    view.page().runJavaScript("if(window._qtHotkey)window._qtHotkey(null)")
+                if not isinstance(event, QKeyEvent):
                     return False
-                if self._held:
-                    name = self._key_name(k, event)
-                    if name:
-                        mods = " ".join(m for m in _MOD_ORDER if m in self._held)
-                        combo = json.dumps(f"{mods},{name}")
-                        view.page().runJavaScript(f"if(window._qtHotkey)window._qtHotkey({combo})")
-            elif t == QEvent.Type.KeyRelease:
-                mod = _MOD_NAMES.get(event.key())  # type: ignore[attr-defined]
-                if mod:
-                    self._held.discard(mod)
-            elif t == QEvent.Type.FocusOut:
-                self._held.clear()
+                if t == QEvent.Type.KeyPress:
+                    k = event.key()
+                    mod = _MOD_NAMES.get(k)
+                    if mod:
+                        self._held.add(mod)
+                        return False
+                    if k == int(Qt.Key.Key_Escape):
+                        view.page().runJavaScript("if(window._qtHotkey)window._qtHotkey(null)")
+                        return False
+                    if self._held:
+                        name = self._key_name(k, event)
+                        if name:
+                            mods = " ".join(m for m in _MOD_ORDER if m in self._held)
+                            combo = json.dumps(f"{mods},{name}")
+                            view.page().runJavaScript(f"if(window._qtHotkey)window._qtHotkey({combo})")
+                elif t == QEvent.Type.KeyRelease:
+                    mod = _MOD_NAMES.get(event.key())
+                    if mod:
+                        self._held.discard(mod)
+            except Exception:
+                pass
             return False
 
-        def _key_name(self, k: int, event: object) -> str:
-            f1 = int(Qt.Key.Key_F1)
-            if f1 <= k <= int(Qt.Key.Key_F35):
-                return f"F{k - f1 + 1}"
+        def _key_name(self, k: int, event: QKeyEvent) -> str:
+            if _KEY_F1 <= k <= _KEY_F_MAX:
+                return f"F{k - _KEY_F1 + 1}"
             if k in _SPECIAL:
                 return _SPECIAL[k]
-            text: str = event.text()  # type: ignore[attr-defined]
+            text: str = event.text()
             if text and text.isprintable() and len(text) == 1:
                 return text.upper()
             return ""
@@ -247,7 +256,7 @@ def _run_app_window(url: str, server: _ClipsyUiServer) -> None:
     view.setUrl(QUrl(url))
 
     hotkey_filter = _HotkeyFilter()
-    app.installEventFilter(hotkey_filter)
+    view.installEventFilter(hotkey_filter)
 
     window = ClipsyWindow()
     window.setWindowTitle("Clipsy Control")
@@ -298,7 +307,42 @@ def _hyprland_status(config: AppConfig) -> dict[str, Any]:
         "exists": path.exists(),
         "installed": _hyprland_block_installed(path),
         "preview": _hyprland_block(config).splitlines(),
+        "hotkeys": _parse_hyprland_hotkeys(path),
     }
+
+
+def _parse_hyprland_hotkeys(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    text = path.read_text(encoding="utf-8")
+    if HYPRLAND_BEGIN not in text or HYPRLAND_END not in text:
+        return {}
+    _, rest = text.split(HYPRLAND_BEGIN, 1)
+    block, _ = rest.split(HYPRLAND_END, 1)
+    result: dict[str, str] = {}
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("bind"):
+            continue
+        eq = stripped.find("=")
+        if eq == -1:
+            continue
+        parts = [p.strip() for p in stripped[eq + 1 :].split(",", 3)]
+        if len(parts) < 4 or parts[2] != "exec":
+            continue
+        mods, key, command = parts[0], parts[1], parts[3].strip()
+        hotkey = f"{mods},{key}" if mods else key
+        if _cmd_ends_with(command, "clipsy clip"):
+            result["clip"] = hotkey
+        elif _cmd_ends_with(command, "clipsy record-toggle"):
+            result["record_toggle"] = hotkey
+        elif _cmd_ends_with(command, "clipsy reload"):
+            result["reload_config"] = hotkey
+    return result
+
+
+def _cmd_ends_with(command: str, suffix: str) -> bool:
+    return command == suffix or command.endswith(f" {suffix}")
 
 
 def _install_hyprland_binds(config: AppConfig) -> dict[str, Any]:
@@ -1636,7 +1680,7 @@ APP_HTML = r"""<!doctype html>
   </div>
 
   <script>
-    const state = { config: null, activeTab: "clips", capturingHotkey: null };
+    const state = { config: null, activeTab: "clips", capturingHotkey: null, _pendingHyprHotkeys: null };
 
     // Track modifier keys for browser fallback (Qt native window uses _qtHotkey instead)
     var heldMods = new Set();
@@ -1690,8 +1734,26 @@ APP_HTML = r"""<!doctype html>
           input.value = value ?? "";
         }
       });
+      if (state._pendingHyprHotkeys) {
+        applyHyprlandHotkeys(state._pendingHyprHotkeys);
+        state._pendingHyprHotkeys = null;
+      }
       syncMetrics();
       syncHotkeyDisplays();
+    }
+
+    function applyHyprlandHotkeys(hk) {
+      if (!state.config || !hk) return;
+      const map = { clip: "hotkeys.clip", record_toggle: "hotkeys.record_toggle", reload_config: "hotkeys.reload_config" };
+      let changed = false;
+      for (const [field, path] of Object.entries(map)) {
+        if (!hk[field]) continue;
+        setPath(state.config, path, hk[field]);
+        const input = $(`[data-bind="${path}"]`);
+        if (input) input.value = hk[field];
+        changed = true;
+      }
+      if (changed) syncHotkeyDisplays();
     }
 
     function collectConfig() {
@@ -1758,6 +1820,13 @@ APP_HTML = r"""<!doctype html>
       const data = await requestJson("/api/hyprland");
       if (!data.ok) return;
       renderHyprland(data.hyprland);
+      if (data.hyprland.hotkeys && Object.keys(data.hyprland.hotkeys).length > 0) {
+        if (state.config) {
+          applyHyprlandHotkeys(data.hyprland.hotkeys);
+        } else {
+          state._pendingHyprHotkeys = data.hyprland.hotkeys;
+        }
+      }
     }
 
     async function loadStatus() {

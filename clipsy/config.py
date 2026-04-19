@@ -31,9 +31,9 @@ class ClipConfig:
     fps: int = 60
     save_path: str = "~/Videos/Clips"
     container: str = "mp4"
-    codec: str = "h264"
+    codec: str = "hevc"
     quality: str = "very_high"
-    bitrate_mode: str = "cbr"
+    bitrate_mode: str = "qp"
     framerate_mode: str = "vfr"
     replay_storage: str = "ram"
     restart_on_save: bool = False

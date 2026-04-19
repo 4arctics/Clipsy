@@ -25,10 +25,10 @@ def notify_clip(seconds: int, enabled: bool = True) -> None:
     if not enabled:
         return
     if shutil.which("hyprctl") is not None:
-        text = f"fontsize:16 ✔  Saved the last {seconds} seconds."
+        text = f"fontsize:16 Saved the last {seconds} seconds."
         try:
             subprocess.run(
-                ["hyprctl", "notify", "5", "5000", "rgb(a6e3a1)", text],
+                ["hyprctl", "notify", "-1", "5000", "rgb(a6e3a1)", text],
                 check=False,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,

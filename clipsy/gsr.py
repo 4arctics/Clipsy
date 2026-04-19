@@ -68,7 +68,7 @@ def build_replay_command(config: AppConfig, config_path: Path) -> list[str]:
         "-k",
         clip.codec,
         "-q",
-        clip.quality,
+        _quality_arg(clip.quality, clip.bitrate_mode),
         "-bm",
         clip.bitrate_mode,
         "-fm",
@@ -100,7 +100,7 @@ def build_record_command(config: AppConfig, output_file: Path, config_path: Path
         "-k",
         record.codec,
         "-q",
-        record.quality,
+        _quality_arg(record.quality, record.bitrate_mode),
         "-bm",
         record.bitrate_mode,
         "-fm",
@@ -152,12 +152,25 @@ def _audio_args(config: AppConfig) -> list[str]:
 
 def _add_resolution(args: list[str], resolution: str) -> None:
     resolution = (resolution or "").strip()
-    if resolution:
+    if resolution and resolution != "0x0":
         args += ["-s", resolution]
 
 
 def _yes_no(value: bool) -> str:
     return "yes" if value else "no"
+
+
+_QUALITY_TO_BITRATE = {"medium": 15000, "high": 25000, "very_high": 40000, "ultra": 60000}
+
+
+def _quality_arg(quality: str, bitrate_mode: str) -> str:
+    if bitrate_mode not in {"cbr", "vbr"}:
+        return quality
+    try:
+        int(quality)
+        return quality
+    except ValueError:
+        return str(_QUALITY_TO_BITRATE.get(quality, 40000))
 
 
 @dataclass

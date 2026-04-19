@@ -2,10 +2,15 @@
 set -eu
 
 APP_DIR="${CLIPSY_APP_DIR:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}"
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 
 open_gui() {
     if command -v clipsy >/dev/null 2>&1; then
         clipsy gui && return 0
+    fi
+    PIPX_CLIPSY="$HOME/.local/share/pipx/venvs/clipsy/bin/clipsy"
+    if [ -f "$PIPX_CLIPSY" ]; then
+        "$PIPX_CLIPSY" gui && return 0
     fi
     cd "$APP_DIR"
     /usr/bin/python -m clipsy gui && return 0
