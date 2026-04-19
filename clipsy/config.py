@@ -34,7 +34,7 @@ class ClipConfig:
     codec: str = "hevc"
     quality: str = "18"
     bitrate_mode: str = "qp"
-    framerate_mode: str = "vfr"
+    framerate_mode: str = "cfr"
     replay_storage: str = "ram"
     restart_on_save: bool = False
     restore_portal_session: bool = True
@@ -51,7 +51,7 @@ class RecordConfig:
     codec: str = "h264"
     quality: str = "18"
     bitrate_mode: str = "qp"
-    framerate_mode: str = "vfr"
+    framerate_mode: str = "cfr"
     restore_portal_session: bool = True
     cursor: bool = True
     pause_replay_buffer: bool = True
