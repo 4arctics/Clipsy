@@ -32,7 +32,7 @@ class ClipConfig:
     save_path: str = "~/Videos/Clips"
     container: str = "mp4"
     codec: str = "hevc"
-    quality: str = "very_high"
+    quality: str = "18"
     bitrate_mode: str = "qp"
     framerate_mode: str = "vfr"
     replay_storage: str = "ram"
@@ -49,7 +49,7 @@ class RecordConfig:
     save_path: str = "~/Videos/Recordings"
     container: str = "mkv"
     codec: str = "h264"
-    quality: str = "very_high"
+    quality: str = "18"
     bitrate_mode: str = "qp"
     framerate_mode: str = "vfr"
     restore_portal_session: bool = True
