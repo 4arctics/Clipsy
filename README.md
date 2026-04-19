@@ -44,22 +44,17 @@ yay -S gpu-screen-recorder
 
 ### 3. Install the `clipsy` command
 
+Arch blocks `pip install` system-wide. Use `pipx` instead — it manages an isolated venv automatically and puts `clipsy` on your PATH:
+
 ```sh
-pip install --user -e .
+sudo pacman -S python-pipx
+pipx install --editable ~/clipping
 ```
 
-Then make sure `~/.local/bin` is in your `$PATH` — add this to your `~/.bashrc` or `~/.zshrc` if `clipsy` says "not found":
+To update after a `git pull`:
 
 ```sh
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Then reload your shell: `source ~/.bashrc` (or open a new terminal).
-
-Or skip the install entirely and run directly:
-
-```sh
-python -m clipsy <command>
+pipx reinstall clipsy
 ```
 
 ### 4. Generate a config
