@@ -51,10 +51,10 @@ sudo pacman -S python-pipx
 pipx install --editable ~/clipping
 ```
 
-To update after a `git pull`:
+To update, just pull — no reinstall needed since it's an editable install:
 
 ```sh
-pipx reinstall clipsy
+cd ~/clipping && git pull
 ```
 
 ### 4. Generate a config
