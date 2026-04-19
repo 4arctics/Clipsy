@@ -22,7 +22,7 @@ Clip gameplay, efficiently and properly. A Linux clipping engine for Hyprland ba
 **Optional (for the GUI):**
 
 ```sh
-sudo pacman -S python-pyside6
+sudo pacman -S pyside6
 ```
 
 ---
