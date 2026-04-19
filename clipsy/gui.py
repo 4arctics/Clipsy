@@ -24,9 +24,16 @@ def run_gui(config_path: Path | None = None) -> None:
     url = f"http://127.0.0.1:{server.server_address[1]}"
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    print(f"Clipsy UI running in app window at {url}")
     try:
         _run_app_window(url, server)
+    except RuntimeError:
+        print(f"Clipsy UI open in your browser: {url}")
+        print("Press Ctrl+C or click 'Close UI' in the browser to quit.")
+        subprocess.Popen(["xdg-open", url])
+        try:
+            thread.join()
+        except KeyboardInterrupt:
+            pass
     except KeyboardInterrupt:
         pass
     finally:
